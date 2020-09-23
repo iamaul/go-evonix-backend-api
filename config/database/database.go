@@ -33,12 +33,7 @@ func ConnectDatabase(c *config.Configuration) (*Database, error) {
 		log.Fatal(err)
 	}
 
-	defer func() {
-		err := dbConnect.Close()
-		if err != nil {
-			log.Fatal(err)
-		}
-	}()
+	defer dbConnect.Close()
 
 	dbConnection.SQL = dbConnect
 

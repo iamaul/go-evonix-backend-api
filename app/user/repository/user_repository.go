@@ -25,33 +25,28 @@ func (u *userRepository) fetch(ctx context.Context, query string, args ...interf
 		return nil, err
 	}
 
-	defer func() {
-		err := rows.Close()
-		if err != nil {
-			logrus.Error(err)
-		}
-	}()
+	defer rows.Close()
 
-	result := make([]*models.User, 0)
+	payload := make([]*models.User, 0)
 	for rows.Next() {
-		f := new(models.User)
+		data := new(models.User)
 		err = rows.Scan(
-			&f.ID,
-			&f.Name,
-			&f.Email,
-			&f.RegisteredDate,
-			&f.RegisterIP,
-			&f.UCPLoginIP,
-			&f.LoginIP,
-			&f.Admin,
-			&f.AdminDivision,
-			&f.Helper,
-			&f.LastLogin,
-			&f.Status,
-			&f.DelayCharacterDeletion,
-			&f.Blocked,
-			&f.LastBlockIssuer,
-			&f.LastBlockReason,
+			&data.ID,
+			&data.Name,
+			&data.Email,
+			&data.RegisteredDate,
+			&data.RegisterIP,
+			&data.UCPLoginIP,
+			&data.LoginIP,
+			&data.Admin,
+			&data.AdminDivision,
+			&data.Helper,
+			&data.LastLogin,
+			&data.Status,
+			&data.DelayCharacterDeletion,
+			&data.Blocked,
+			&data.LastBlockIssuer,
+			&data.LastBlockReason,
 		)
 
 		if err != nil {
@@ -59,10 +54,10 @@ func (u *userRepository) fetch(ctx context.Context, query string, args ...interf
 			return nil, err
 		}
 
-		result = append(result, f)
+		payload = append(payload, data)
 	}
 
-	return result, nil
+	return payload, nil
 }
 
 func (u *userRepository) GetByID(ctx context.Context, id int64) (res *models.User, err error) {
