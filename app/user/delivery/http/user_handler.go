@@ -4,20 +4,15 @@ import (
 	"context"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-playground/validator"
 	"github.com/iamaul/evonix-backend-api/app/models"
 	"github.com/iamaul/evonix-backend-api/app/user"
+	"github.com/iamaul/evonix-backend-api/utils"
 
 	"github.com/labstack/echo"
 )
-
-type response struct {
-	Code    int         `json:"code,omitempty"`
-	Data    interface{} `json:"data,omitempty"`
-	Message string      `json:"message,omitempty"`
-	Success bool        `json:"success,omitempty"`
-}
 
 type UserHandler struct {
 	Usercase user.Usecase
@@ -28,21 +23,22 @@ func NewUserHandler(e *echo.Echo, uu user.Usecase) {
 		Usercase: uu,
 	}
 
-	e.POST("/users", handler.Store)
-	e.GET("/users/:id", handler.GetByID)
+	g := e.Group("/api/v1")
+	g.POST("/users", handler.Store)
+	g.GET("/users/:id", handler.GetByID)
 }
 
 func (uh *UserHandler) GetByID(c echo.Context) error {
-	paramId, err := strconv.Atoi(c.Param("id"))
+	uID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		return c.JSON(http.StatusNotFound, &response{
+		return c.JSON(http.StatusNotFound, &utils.Response{
 			Code:    http.StatusNotFound,
 			Message: err.Error(),
 			Success: false,
 		})
 	}
 
-	id := int64(paramId)
+	id := int64(uID)
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
@@ -50,16 +46,16 @@ func (uh *UserHandler) GetByID(c echo.Context) error {
 
 	user, err := uh.Usercase.GetByID(ctx, id)
 	if err != nil {
-		return c.JSON(http.StatusNotFound, &response{
+		return c.JSON(http.StatusNotFound, &utils.Response{
 			Code:    http.StatusNotFound,
 			Message: err.Error(),
 			Success: false,
 		})
 	}
 
-	return c.JSON(http.StatusOK, &response{
+	return c.JSON(http.StatusOK, &utils.Response{
 		Code:    http.StatusOK,
-		Data:    user,
+		Result:  user,
 		Success: true,
 	})
 }
@@ -78,7 +74,7 @@ func (uh *UserHandler) Store(c echo.Context) error {
 
 	err := c.Bind(&user)
 	if err != nil {
-		return c.JSON(http.StatusUnprocessableEntity, &response{
+		return c.JSON(http.StatusUnprocessableEntity, &utils.Response{
 			Code:    http.StatusUnprocessableEntity,
 			Message: err.Error(),
 			Success: false,
@@ -86,7 +82,7 @@ func (uh *UserHandler) Store(c echo.Context) error {
 	}
 
 	if ok, err := createUserValidation(&user); !ok {
-		return c.JSON(http.StatusBadRequest, &response{
+		return c.JSON(http.StatusBadRequest, &utils.Response{
 			Code:    http.StatusBadRequest,
 			Message: err.Error(),
 			Success: false,
@@ -98,19 +94,25 @@ func (uh *UserHandler) Store(c echo.Context) error {
 		ctx = context.Background()
 	}
 
+	user.RegisteredDate = time.Now().Unix()
+	user.RegisterIP = c.RealIP()
+
 	err = uh.Usercase.Store(ctx, &user)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, &response{
+		return c.JSON(http.StatusInternalServerError, &utils.Response{
 			Code:    http.StatusInternalServerError,
 			Message: err.Error(),
 			Success: false,
 		})
 	}
 
-	return c.JSON(http.StatusCreated, &response{
-		Code:    http.StatusCreated,
-		Message: "Successfully created",
-		Data:    user,
-		Success: true,
+	token := utils.GenerateAccessToken(user)
+
+	return c.JSON(http.StatusCreated, &utils.Response{
+		Code:        http.StatusCreated,
+		Message:     "User created successfully",
+		Result:      user,
+		AccessToken: token,
+		Success:     true,
 	})
 }

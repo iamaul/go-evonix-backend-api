@@ -7,6 +7,8 @@ import (
 	"net/url"
 
 	"github.com/iamaul/evonix-backend-api/config"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 type Database struct {
@@ -33,7 +35,7 @@ func ConnectDatabase(c *config.Configuration) (*Database, error) {
 		log.Fatal(err)
 	}
 
-	defer dbConnect.Close()
+	// defer dbConnect.Close()
 
 	dbConnection.SQL = dbConnect
 

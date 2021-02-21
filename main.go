@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"time"
 
 	"github.com/iamaul/evonix-backend-api/app/middleware"
@@ -25,7 +26,15 @@ func main() {
 
 	e := echo.New()
 	appMiddl := middleware.InitAppMiddleware(config.AppName)
+
 	e.Use(appMiddl.CORS)
+
+	e.GET("/", func(c echo.Context) error {
+		return c.JSON(http.StatusOK, map[string]interface{}{
+			"status":  http.StatusAccepted,
+			"message": "EvoniX Backend API v1.0",
+		})
+	})
 
 	userRepo := ur.NewUserRepository(connection.SQL)
 
@@ -35,5 +44,5 @@ func main() {
 
 	udh.NewUserHandler(e, userCase)
 
-	log.Fatal(e.Start(fmt.Sprintf(`%s:%s`, config.AppPort, config.AppName)))
+	log.Fatal(e.Start(fmt.Sprintf(`%s`, config.AppPort)))
 }

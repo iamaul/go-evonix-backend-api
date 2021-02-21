@@ -34,6 +34,7 @@ func (u *userRepository) fetch(ctx context.Context, query string, args ...interf
 			&data.ID,
 			&data.Name,
 			&data.Email,
+			&data.EmailVerified,
 			&data.RegisteredDate,
 			&data.RegisterIP,
 			&data.UCPLoginIP,
@@ -61,16 +62,11 @@ func (u *userRepository) fetch(ctx context.Context, query string, args ...interf
 }
 
 func (u *userRepository) GetByID(ctx context.Context, id int64) (res *models.User, err error) {
-	query := `SELECT id, name, email, registered_date, register_ip, ucp_login_ip, login_ip, 
-		admin, 
-		admin_division,
-		helper,
-		lastlogin,
-		status,
-		delay_character_deletion,
-		blocked,
-		lastblock_issuer,
-		lastblock_reason FROM users WHERE id=?`
+	query := `SELECT id, name, email, email_verified, registered_date, register_ip, ucp_login_ip, 
+		login_ip, admin, admin_division, helper, lastlogin, status, delay_character_deletion,
+		blocked, lastblock_issuer, lastblock_reason
+	FROM users WHERE id=?`
+
 	result, err := u.fetch(ctx, query, id)
 	if err != nil {
 		return nil, err
@@ -79,23 +75,18 @@ func (u *userRepository) GetByID(ctx context.Context, id int64) (res *models.Use
 	if len(result) > 0 {
 		res = result[0]
 	} else {
-		return nil, errors.New("Data not found")
+		return nil, errors.New("User not found")
 	}
 
 	return
 }
 
 func (u *userRepository) GetByName(ctx context.Context, name string) (res *models.User, err error) {
-	query := `SELECT id, name, email, registered_date, register_ip, ucp_login_ip, login_ip, 
-		admin, 
-		admin_division,
-		helper,
-		lastlogin,
-		status,
-		delay_character_deletion,
-		blocked,
-		lastblock_issuer,
-		lastblock_reason FROM users WHERE name=?`
+	query := `SELECT id, name, email, email_verified, registered_date, register_ip, ucp_login_ip, 
+		login_ip, admin, admin_division, helper, lastlogin, status, delay_character_deletion,
+		blocked, lastblock_issuer, lastblock_reason 
+	FROM users WHERE name=?`
+
 	result, err := u.fetch(ctx, query, name)
 	if err != nil {
 		return nil, err
@@ -104,23 +95,18 @@ func (u *userRepository) GetByName(ctx context.Context, name string) (res *model
 	if len(result) > 0 {
 		res = result[0]
 	} else {
-		return nil, errors.New("Data not found")
+		return nil, errors.New("User not found")
 	}
 
 	return
 }
 
 func (u *userRepository) GetByEmail(ctx context.Context, email string) (res *models.User, err error) {
-	query := `SELECT id, name, email, registered_date, register_ip, ucp_login_ip, login_ip, 
-		admin, 
-		admin_division,
-		helper,
-		lastlogin,
-		status,
-		delay_character_deletion,
-		blocked,
-		lastblock_issuer,
-		lastblock_reason FROM users WHERE email=?`
+	query := `SELECT id, name, email, email_verified, registered_date, register_ip, ucp_login_ip, 
+		login_ip, admin, admin_division, helper, lastlogin, status, delay_character_deletion,
+		blocked, lastblock_issuer, lastblock_reason 
+	FROM users WHERE email=?`
+
 	result, err := u.fetch(ctx, query, email)
 	if err != nil {
 		return nil, err
@@ -129,20 +115,21 @@ func (u *userRepository) GetByEmail(ctx context.Context, email string) (res *mod
 	if len(result) > 0 {
 		res = result[0]
 	} else {
-		return nil, errors.New("Data not found")
+		return nil, errors.New("User not found")
 	}
 
 	return
 }
 
 func (u *userRepository) Store(ctx context.Context, um *models.User) error {
-	query := `INSERT users SET name=?, email=?, password=?, registered_date=?, admin=?, helper=?, register_ip=?`
+	query := `INSERT users SET name=?, email=?, password=?, registered_date=?, register_ip=?`
+
 	stmt, err := u.DbConnection.PrepareContext(ctx, query)
 	if err != nil {
 		return err
 	}
 
-	res, err := stmt.ExecContext(ctx, um.Name, um.Email, um.Password, um.RegisteredDate, um.Admin, um.Helper, um.RegisterIP)
+	res, err := stmt.ExecContext(ctx, um.Name, um.Email, um.Password, um.RegisteredDate, um.RegisterIP)
 	if err != nil {
 		return err
 	}

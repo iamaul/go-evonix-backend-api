@@ -7,6 +7,7 @@ import (
 
 	"github.com/iamaul/evonix-backend-api/app/models"
 	"github.com/iamaul/evonix-backend-api/app/user"
+	"github.com/iamaul/evonix-backend-api/utils"
 )
 
 type userUsecase struct {
@@ -14,6 +15,7 @@ type userUsecase struct {
 	contextTimeout time.Duration
 }
 
+// NewUserUsecase is a representation of user usecase interface
 func NewUserUsecase(ur user.Repository, timeout time.Duration) user.Usecase {
 	return &userUsecase{
 		userRepo:       ur,
@@ -63,12 +65,12 @@ func (uu *userUsecase) Store(c context.Context, um *models.User) error {
 
 	userExist, _ := uu.GetByName(ctx, um.Name)
 	if userExist != nil {
-		return errors.New("That username is already in use")
+		return errors.New(utils.UsernameExists)
 	}
 
 	emailExist, _ := uu.GetByEmail(ctx, um.Email)
 	if emailExist != nil {
-		return errors.New("The email address that you've entered is already exist")
+		return errors.New(utils.EmailExists)
 	}
 
 	err := uu.userRepo.Store(ctx, um)
