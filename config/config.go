@@ -1,41 +1,140 @@
 package config
 
 import (
-	"fmt"
+	"errors"
 	"log"
+	"time"
 
-	"github.com/caarlos0/env"
-	"github.com/joho/godotenv"
+	"github.com/spf13/viper"
 )
 
-type Configuration struct {
-	AppName            string `env:"APP_NAME"`
-	AppPort            string `env:"APP_PORT" envDefault:":5000"`
-	JwtSecret          string `env:"JWT_SECRET,required"`
-	AccessTokenSecret  string `env:"ACCESS_TOKEN_SECRET"`
-	RefreshTokenSecret string `env:"REFRESH_TOKEN_SECRET"`
-	DbHost             string `env:"DB_HOSTNAME,required"`
-	DbPort             string `env:"DB_PORT,required"`
-	DbUser             string `env:"DB_USER,required"`
-	DbPassword         string `env:"DB_PASSWORD,required"`
-	DbName             string `env:"DB_NAME,required"`
-	RedisHost          string `env:"REDIS_HOST,required"`
-	RedisPort          string `env:"REDIS_PORT,required"`
-	RedisPassword      string `env:"REDIS_PASSWORD,required"`
+type (
+	Config struct {
+		Server      ServerConfig
+		Mysql       MysqlConfig
+		Redis       RedisConfig
+		Cookie      Cookie
+		Session     Session
+		Metrics     Metrics
+		Logger      Logger
+		FileStorage FileStorage
+		Jaeger      Jaeger
+	}
+
+	ServerConfig struct {
+		AppVersion        string
+		Port              string
+		PprofPort         string
+		Mode              string
+		JwtSecretKey      string
+		CookieName        string
+		PasswordSalt      string
+		ReadTimeout       time.Duration
+		WriteTimeout      time.Duration
+		SSL               bool
+		CtxDefaultTimeout time.Duration
+		CSRF              bool
+		Debug             bool
+	}
+
+	MysqlConfig struct {
+		MysqlHost     string
+		MysqlPort     string
+		MysqlUser     string
+		MysqlPassword string
+		MysqlDbname   string
+		MysqlSSLMode  bool
+		MysqlDriver   string
+	}
+
+	RedisConfig struct {
+		RedisAddr      string
+		RedisPassword  string
+		RedisDB        string
+		RedisDefaultdb string
+		MinIdleConns   int
+		PoolSize       int
+		PoolTimeout    int
+		Password       string
+		DB             int
+	}
+
+	Logger struct {
+		Development       bool
+		DisableCaller     bool
+		DisableStacktrace bool
+		Encoding          string
+		Level             string
+	}
+
+	Cookie struct {
+		Name     string
+		MaxAge   int
+		Secure   bool
+		HTTPOnly bool
+	}
+
+	Session struct {
+		Prefix string
+		Name   string
+		Expire int
+	}
+
+	Metrics struct {
+		URL         string
+		ServiceName string
+	}
+
+	FileStorage struct {
+		Endpoint  string
+		Bucket    string
+		AccessKey string
+		SecretKey string
+		Secure    bool
+	}
+
+	Jaeger struct {
+		Host        string
+		ServiceName string
+		LogSpans    bool
+	}
+)
+
+func LoadConfig(filename string) (*viper.Viper, error) {
+	v := viper.New()
+
+	v.SetConfigName(filename)
+	v.AddConfigPath(".")
+	v.AutomaticEnv()
+	if err := v.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			return nil, errors.New("Config file not found")
+		}
+		return nil, err
+	}
+
+	return v, nil
 }
 
-func NewConfig(file ...string) *Configuration {
-	err := godotenv.Load(file...)
+func ParseConfig(v *viper.Viper) (*Config, error) {
+	var c Config
+
+	err := v.Unmarshal(&c)
 	if err != nil {
-		log.Printf("File .env not found %q\n", file)
+		log.Printf("Unable to decode into struct, %v", err)
+		return nil, err
 	}
 
-	cfg := Configuration{}
+	SetConfig(c)
+	return &c, nil
+}
 
-	err = env.Parse(&cfg)
-	if err != nil {
-		fmt.Printf("%+v\n", err)
-	}
+var config Config
 
-	return &cfg
+func GetConfig() Config {
+	return config
+}
+
+func SetConfig(cfg Config) {
+	config = cfg
 }
